@@ -1,0 +1,24 @@
+{
+    "name": "initorm/orm",
+    "description": "InitORM ORM",
+    "keywords": ["php", "php8", "pdo", "database", "orm"],
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "InitORM\\ORM\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Muhammet ŞAFAK",
+            "email": "info@muhammetsafak.com.tr"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.0",
+        "ext-pdo": "*",
+        "initorm/database": "^1.0"
+    }
+}

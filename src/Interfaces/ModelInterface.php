@@ -20,9 +20,6 @@ use InitORM\QueryBuilder\Exceptions\QueryBuilderException;
 use InitORM\DBAL\DataMapper\Interfaces\DataMapperInterface;
 use \InitORM\ORM\Exceptions\{WritableException, ReadableException, UpdatableException, DeletableException};
 
-/**
- * @mixin DatabaseInterface
- */
 interface ModelInterface
 {
 

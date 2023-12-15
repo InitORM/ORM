@@ -14,6 +14,8 @@
 declare(strict_types=1);
 namespace InitORM\ORM;
 
+use InitORM\Database\Database;
+use InitORM\QueryBuilder\QueryBuilder;
 use ReflectionClass;
 use Throwable;
 use InitORM\Database\Facade\DB;
@@ -28,6 +30,10 @@ use InitORM\ORM\Exceptions\{ModelException,
     UpdatableException,
     DeletableException};
 
+/**
+ * @mixin Database
+ * @mixin QueryBuilder
+ */
 abstract class Model implements ModelInterface
 {
 

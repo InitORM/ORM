@@ -24,16 +24,10 @@ final class Helper
     public static function camelCaseToSnakeCase(string $string): string
     {
         $string = lcfirst($string);
-        $split = preg_split('', $string, -1, PREG_SPLIT_NO_EMPTY);
-        $snake_case = '';
-        $i = 0;
-        foreach ($split as $row) {
-            $snake_case .= ($i === 0 ? '_' : '')
-                . strtolower($row);
-            ++$i;
-        }
 
-        return lcfirst($snake_case);
+        return preg_replace_callback('/[A-Z]/', function ($match) {
+            return '_' . strtolower($match[0]);
+        }, $string);
     }
 
     /**

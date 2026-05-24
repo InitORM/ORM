@@ -12,13 +12,15 @@
     "authors": [
         {
             "name": "Muhammet ŞAFAK",
-            "email": "info@muhammetsafak.com.tr"
+            "email": "info@muhammetsafak.com.tr",
+            "homepage": "https://www.muhammetsafak.com.tr",
+            "role": "Developer"
         }
     ],
     "minimum-stability": "stable",
     "require": {
         "php": ">=8.0",
         "ext-pdo": "*",
-        "initorm/database": "^1.0"
+        "initorm/database": "^2.0"
     }
 }

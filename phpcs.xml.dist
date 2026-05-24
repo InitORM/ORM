@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<ruleset name="InitORM ORM">
+    <description>PSR-12 with a 120-char soft cap on src/, relaxed for tests.</description>
+
+    <file>src</file>
+    <file>tests</file>
+
+
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+    <arg value="p"/>
+
+    <rule ref="PSR12"/>
+
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+            <property name="absoluteLineLimit" value="200"/>
+        </properties>
+    </rule>
+
+    <!-- Tests pin expected values inline for readability. -->
+    <rule ref="Generic.Files.LineLength">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Test method names use snake_case for long behaviour descriptions. -->
+    <rule ref="PSR1.Methods.CamelCapsMethodName">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+</ruleset>

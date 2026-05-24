@@ -1,54 +1,62 @@
 <?php
+
 /**
- * InitORM ORM
- *
- * This file is part of InitORM ORM.
- *
- * @author      Muhammet ŞAFAK <info@muhammetsafak.com.tr>
- * @copyright   Copyright © 2023 Muhammet ŞAFAK
- * @license     ./LICENSE  MIT
- * @version     1.0
- * @link        https://www.muhammetsafak.com.tr
+ * @package InitORM\ORM
+ * @license MIT
  */
 
 declare(strict_types=1);
+
 namespace InitORM\ORM\Utils;
 
+/**
+ * Internal naming-convention helpers used by {@see \InitORM\ORM\Model} (to
+ * auto-derive a schema name from a class short name) and by
+ * {@see \InitORM\ORM\Entity} (to translate snake_case column names to the
+ * `get{Column}Attribute` / `set{Column}Attribute` accessor convention).
+ *
+ * Conversions are deliberately Unicode-naive and operate on the ASCII subset
+ * that PHP identifiers can legally use; identifier-shape inputs ("Posts",
+ * "PostCategory", "post_title") round-trip losslessly.
+ */
 final class Helper
 {
+    private function __construct()
+    {
+    }
 
     /**
-     * @param string $string
-     * @return string
+     * Convert a camelCase or PascalCase identifier to snake_case.
+     *
+     * Boundary rules:
+     *
+     *   - "Posts"             → "posts"
+     *   - "PostCategory"      → "post_category"
+     *   - "PostCategoryTag"   → "post_category_tag"
+     *   - "XMLParser"         → "xml_parser"  (consecutive uppercase + lower)
+     *   - "HTTPRequest"       → "http_request"
+     *
+     * Already-lowercase or already-snake_case input is preserved.
      */
     public static function camelCaseToSnakeCase(string $string): string
     {
-        $string = lcfirst($string);
-        $split = preg_split('', $string, -1, PREG_SPLIT_NO_EMPTY);
-        $snake_case = '';
-        $i = 0;
-        foreach ($split as $row) {
-            $snake_case .= ($i === 0 ? '_' : '')
-                . strtolower($row);
-            ++$i;
-        }
+        $string = (string) preg_replace('/([A-Z]+)([A-Z][a-z])/', '$1_$2', $string);
+        $string = (string) preg_replace('/([a-z\d])([A-Z])/', '$1_$2', $string);
 
-        return lcfirst($snake_case);
+        return strtolower($string);
     }
 
     /**
-     * @param string $string
-     * @return string
+     * Convert a snake_case identifier to PascalCase.
+     *
+     *   - "posts"          → "Posts"
+     *   - "post_title"     → "PostTitle"
+     *   - "post_category"  → "PostCategory"
+     *
+     * Empty segments produced by consecutive or leading underscores collapse.
      */
     public static function snakeCaseToPascalCase(string $string): string
     {
-        $split = explode('_', strtolower($string));
-        $camelCase = '';
-        foreach ($split as $row) {
-            $camelCase .= ucfirst($row);
-        }
-
-        return $camelCase;
+        return str_replace('_', '', ucwords(strtolower($string), '_'));
     }
-
 }

@@ -1,90 +1,143 @@
 <?php
+
 /**
- * InitORM ORM
- *
- * This file is part of InitORM ORM.
- *
- * @author      Muhammet ŞAFAK <info@muhammetsafak.com.tr>
- * @copyright   Copyright © 2023 Muhammet ŞAFAK
- * @license     ./LICENSE  MIT
- * @version     1.0
- * @link        https://www.muhammetsafak.com.tr
+ * @package InitORM\ORM
+ * @license MIT
  */
 
 declare(strict_types=1);
+
 namespace InitORM\ORM;
 
 use InitORM\ORM\Exceptions\EntityException;
 use InitORM\ORM\Interfaces\EntityInterface;
 use InitORM\ORM\Utils\Helper;
 
+/**
+ * Base entity class — a typed row container with optional per-column
+ * accessor and mutator hooks (Laravel-style).
+ *
+ * Each row of data lives in {@see self::$attributes}. Reading or writing a
+ * column with an "{@code $entity->name}" property syntax dispatches through
+ * {@see self::__get()} / {@see self::__set()}:
+ *
+ *   - When a subclass declares `getColumnAttribute($value)` or
+ *     `setColumnAttribute($value)`, that method is invoked with the current
+ *     stored value (accessor) or the incoming value (mutator).
+ *   - Otherwise the value is read from / written to the internal attribute
+ *     bag directly.
+ *
+ * Mutator bodies MUST write the transformed value back through
+ * {@see self::setAttribute()} — NOT through `$this->column = ...`. Inside
+ * a class method, undeclared property assignment bypasses {@see __set()}
+ * and creates a dynamic property instead (deprecated in PHP 8.2+, fatal in
+ * a future PHP version), so the value never reaches the attribute bag and
+ * later reads see a stale value.
+ */
 class Entity implements EntityInterface
 {
+    /**
+     * Column → value bag for this row.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $attributes = [];
 
-    protected array $__attributes = [];
+    /**
+     * Snapshot of {@see self::$attributes} taken at construction time (and
+     * any subsequent {@see self::syncOriginal()} call). Subclasses can use
+     * this to implement dirty-tracking.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $attributesOriginal = [];
 
-    protected array $__attributesOriginal = [];
-
+    /**
+     * @param array<string, mixed>|null $data Initial column values, applied
+     *        through mutators when present. Pass null for an empty entity.
+     */
     public function __construct(?array $data = [])
     {
-        $this->setUp($data);
+        $this->fill($data)
+            ->syncOriginal();
     }
 
     /**
-     * @param $name
-     * @param $arguments
-     * @return mixed
-     * @throws EntityException
+     * Default get/set fallback for the `{verb}{Column}Attribute` family —
+     * invoked only when a subclass does not define a real method by that
+     * name. Direct {@code $entity->col} property access does not route
+     * through this method.
+     *
+     * @param array<int, mixed> $arguments
+     *
+     * @throws EntityException When the method name does not match the
+     *         `getXAttribute` / `setXAttribute` pattern.
      */
-    public function __call($name, $arguments)
+    public function __call(string $name, array $arguments): mixed
     {
-        if (str_ends_with($name, 'Attribute') === false) {
-            throw new EntityException($name);
+        if (!str_ends_with($name, 'Attribute')) {
+            throw new EntityException(sprintf('Unknown entity method "%s".', $name));
         }
 
-        $attr = Helper::camelCaseToSnakeCase(substr($name, 3, -9));
+        $prefix = substr($name, 0, 3);
+        $column = Helper::camelCaseToSnakeCase(substr($name, 3, -9));
 
-        return match (substr($name, 0, 3)) {
-            'get'       => $this->__attributes[$attr] ?? null,
-            'set'       => $this->__attributes[$attr] = $arguments[0],
-            default     => throw new EntityException($name)
+        return match ($prefix) {
+            'get'   => $this->attributes[$column] ?? null,
+            'set'   => $this->attributes[$column] = $arguments[0] ?? null,
+            default => throw new EntityException(sprintf('Unknown entity method "%s".', $name)),
         };
     }
 
-    public function __set($name, $value)
+    /**
+     * Property write. When a `set{Column}Attribute($value)` method exists on
+     * the subclass, it is invoked with $value; the method body is expected
+     * to write the transformed value back via {@see self::setAttribute()}.
+     */
+    public function __set(string $name, mixed $value): void
     {
-        $methodName = 'set' . Helper::snakeCaseToPascalCase($name) . 'Attribute';
-        if(method_exists($this, $methodName)){
-            $this->{$methodName}($value);
-            return $value;
+        $method = 'set' . Helper::snakeCaseToPascalCase($name) . 'Attribute';
+
+        if (method_exists($this, $method)) {
+            $this->{$method}($value);
+            return;
         }
-        return $this->__attributes[$name] = $value;
+
+        $this->attributes[$name] = $value;
     }
 
-    public function __get($name)
+    /**
+     * Property read. When a `get{Column}Attribute($value)` method exists on
+     * the subclass, it is invoked with the stored value (or null) and its
+     * return value is propagated to the caller.
+     */
+    public function __get(string $name): mixed
     {
-        $methodName = 'get' . Helper::snakeCaseToPascalCase($name) . 'Attribute';
-        if(method_exists($this, $methodName)){
-            return $this->{$methodName}();
+        $method = 'get' . Helper::snakeCaseToPascalCase($name) . 'Attribute';
+
+        if (method_exists($this, $method)) {
+            return $this->{$method}($this->attributes[$name] ?? null);
         }
-        return $this->__attributes[$name] ?? null;
+
+        return $this->attributes[$name] ?? null;
     }
 
-    public function __isset($name)
+    public function __isset(string $name): bool
     {
-        return isset($this->__attributes[$name]);
+        return isset($this->attributes[$name]);
     }
 
-    public function __unset($name)
+    public function __unset(string $name): void
     {
-        if(isset($this->__attributes[$name])){
-            unset($this->__attributes[$name]);
-        }
+        unset($this->attributes[$name]);
     }
 
-    public function __debugInfo()
+    /**
+     * @return array<string, mixed>
+     */
+    public function __debugInfo(): array
     {
-        return $this->__attributes;
+        return $this->attributes;
     }
 
     /**
@@ -92,7 +145,7 @@ class Entity implements EntityInterface
      */
     public function toArray(): array
     {
-        return $this->__attributes;
+        return $this->attributes;
     }
 
     /**
@@ -100,41 +153,61 @@ class Entity implements EntityInterface
      */
     public function getAttributes(): array
     {
-        return $this->toArray();
+        return $this->attributes;
     }
 
     /**
-     * @param array|null $data
-     * @return $this
+     * @inheritDoc
      */
-    protected function setUp(?array $data = null): self
+    public function getOriginal(): array
     {
-        $this->syncOriginal()
-            ->fill($data);
+        return $this->attributesOriginal;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getAttribute(string $name): mixed
+    {
+        return $this->attributes[$name] ?? null;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setAttribute(string $name, mixed $value): static
+    {
+        $this->attributes[$name] = $value;
+
         return $this;
     }
 
     /**
-     * @param array|null $data
-     * @return $this
+     * @inheritDoc
      */
-    protected function fill(?array $data = null): self
+    public function syncOriginal(): static
     {
-        if($data !== null){
-            foreach ($data as $key => $value) {
-                $this->__set($key, $value);
-            }
+        $this->attributesOriginal = $this->attributes;
+
+        return $this;
+    }
+
+    /**
+     * Populate the entity from an associative array, dispatching through
+     * mutators where they exist. Null is treated as a no-op.
+     *
+     * @param array<string, mixed>|null $data
+     */
+    protected function fill(?array $data = null): static
+    {
+        if ($data === null) {
+            return $this;
         }
+
+        foreach ($data as $key => $value) {
+            $this->__set((string) $key, $value);
+        }
+
         return $this;
     }
-
-    /**
-     * @return $this
-     */
-    protected function syncOriginal(): self
-    {
-        $this->__attributesOriginal = $this->__attributes;
-        return $this;
-    }
-
 }

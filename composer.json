@@ -1,24 +1,75 @@
 {
     "name": "initorm/orm",
-    "description": "InitORM ORM",
-    "keywords": ["php", "php8", "pdo", "database", "orm"],
+    "description": "Lightweight, PDO-based ORM with Active Record-style models and entity accessors/mutators. Built on top of initorm/database, initorm/dbal and initorm/query-builder.",
     "type": "library",
     "license": "MIT",
+    "keywords": [
+        "orm",
+        "model",
+        "entity",
+        "active-record",
+        "soft-delete",
+        "pdo",
+        "mysql",
+        "pgsql",
+        "sqlite",
+        "initorm"
+    ],
+    "homepage": "https://github.com/InitORM/ORM",
+    "support": {
+        "issues": "https://github.com/InitORM/ORM/issues",
+        "source": "https://github.com/InitORM/ORM",
+        "docs": "https://github.com/InitORM/ORM/tree/master/docs"
+    },
+    "authors": [
+        {
+            "name": "Muhammet ŞAFAK",
+            "email": "info@muhammetsafak.com.tr",
+            "homepage": "https://www.muhammetsafak.com.tr",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "ext-pdo": "*",
+        "initorm/database": "^2.0"
+    },
+    "require-dev": {
+        "ext-pdo_sqlite": "*",
+        "phpunit/phpunit": "^10.5",
+        "squizlabs/php_codesniffer": "^3.10",
+        "phpstan/phpstan": "^1.12"
+    },
+    "suggest": {
+        "ext-pdo_mysql": "Required for MySQL/MariaDB connections.",
+        "ext-pdo_pgsql": "Required for PostgreSQL connections.",
+        "ext-pdo_sqlite": "Required for SQLite connections."
+    },
     "autoload": {
         "psr-4": {
             "InitORM\\ORM\\": "src/"
         }
     },
-    "authors": [
-        {
-            "name": "Muhammet ŞAFAK",
-            "email": "info@muhammetsafak.com.tr"
+    "autoload-dev": {
+        "psr-4": {
+            "InitORM\\ORM\\Tests\\": "tests/"
         }
-    ],
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-text --coverage-html=build/coverage",
+        "cs": "phpcs",
+        "cs-ci": "phpcs --warning-severity=0",
+        "cs-fix": "phpcbf",
+        "stan": "phpstan analyse",
+        "qa": [
+            "@cs-ci",
+            "@stan",
+            "@test"
+        ]
+    },
     "minimum-stability": "stable",
-    "require": {
-        "php": ">=8.0",
-        "ext-pdo": "*",
-        "initorm/database": "^1.0"
+    "config": {
+        "sort-packages": true
     }
 }
